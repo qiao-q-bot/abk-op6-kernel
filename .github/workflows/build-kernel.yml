@@ -165,6 +165,14 @@ jobs:
           )
           [ "${#DTBO_FILES[@]}" -gt 0 ] || { echo "::error::No compiled DTBO files found"; exit 1; }
           printf '%s\n' "${DTBO_FILES[@]}" > DTBO_FILES.txt
+
+          # 必须至少编出 1 个 fajita DTBO，否则包不能声称支持 6T
+          if ! grep -q 'fajita.*\.dtbo' DTBO_FILES.txt; then
+            echo "::error::No fajita*.dtbo compiled; check dts Makefile and sources"
+            cat DTBO_FILES.txt
+            exit 1
+          fi
+
           python3 /tmp/mkdtboimg.py create dtbo.img "${DTBO_FILES[@]}"
           test -s dtbo.img
           echo "Compiled ${#DTBO_FILES[@]} DTBO overlays"
@@ -182,8 +190,8 @@ jobs:
 
           {
             echo "project=ABK OnePlus 6 Kernel"
-            echo "device=OnePlus 6"
-            echo "codename=enchilada"
+            echo "device=OnePlus 6 / OnePlus 6T"
+            echo "codename=enchilada,fajita"
             echo "mode=${MODE}"
             echo "kernel_source=${KERNEL_SOURCE}"
             echo "kernel_branch=${KERNEL_BRANCH}"
@@ -228,7 +236,7 @@ jobs:
           cp dtbo.img AnyKernel3/dtbo.img
           cp BUILD_INFO.txt DTBO_FILES.txt AnyKernel3/
 
-          KERNEL_DESC="ABK OnePlus 6 ${MODE} ReSukiSU + SuSFS 2.1.00 (${KERNEL_SOURCE_SHORT})"
+          KERNEL_DESC="ABK OnePlus 6/6T ${MODE} ReSukiSU + SuSFS 2.1.00 (${KERNEL_SOURCE_SHORT})"
           cat > AnyKernel3/anykernel.sh << EOF
           ### AnyKernel3 Ramdisk Mod Script
           ## osm0sis @ xda-developers
@@ -241,7 +249,8 @@ jobs:
           do.cleanuponabort=0
           device.name1=enchilada
           device.name2=OnePlus6
-          device.name3=
+          device.name3=fajita
+          device.name4=OnePlus6T
           supported.versions=
           supported.patchlevels=
           supported.vendorpatchlevels=
@@ -268,7 +277,7 @@ jobs:
         run: |
           set -euo pipefail
           {
-            echo "# OnePlus 6 kernel build"
+            echo "# OnePlus 6 / 6T kernel build"
             echo
             echo "- Mode: \`${MODE}\`"
             echo "- Kernel source SHA: \`${KERNEL_SOURCE_SHA}\`"
